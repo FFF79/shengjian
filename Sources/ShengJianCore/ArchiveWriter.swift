@@ -207,7 +207,7 @@ public actor ArchiveWriter {
         try write(lines.isEmpty ? "" : lines.joined(separator: "\n") + "\n", to: contained(root, "_声笺/agent/sections.jsonl"))
     }
     private func checkIndexOwnership(_ entries: [CatalogEntry], root: URL) throws {
-        let names = ["_声笺/索引.md", "_声笺/agent/README.md"] + Set(entries.map(\.subject)).map { "_声笺/学科索引/\(safeComponent($0)).md" }
+        let names = ["_声笺/索引.md", "_声笺/agent/README.md"] + Set(entries.map(\.subject)).map { "_声笺/分类索引/\(safeComponent($0)).md" }
         for name in names {
             let url = try contained(root, name)
             if fm.fileExists(atPath: url.path), !(try String(contentsOf: url, encoding: .utf8)).contains(marker) { throw AppError.message("\(name) 不是声笺生成的文件，已停止覆盖。") }
@@ -224,12 +224,12 @@ public actor ArchiveWriter {
         let subjects = Set(entries.map(\.subject)).sorted()
         let unclassified = entries.filter { $0.needsClassification == true }
         let reminder = unclassified.isEmpty ? "" : "\n\n## 待手动分类\n\n" + rows(unclassified, up: "../")
-        try write(marker + "\n# 录音笔记\n\n" + subjects.map { "- " + link("学科索引/\(safeComponent($0)).md", $0) }.joined(separator: "\n") + reminder + "\n\n## 按时间\n\n" + rows(entries, up: "../") + "\n", to: contained(root, "_声笺/索引.md"))
-        let directory = root.appendingPathComponent("_声笺/学科索引")
+        try write(marker + "\n# 录音笔记\n\n" + subjects.map { "- " + link("分类索引/\(safeComponent($0)).md", $0) }.joined(separator: "\n") + reminder + "\n\n## 按时间\n\n" + rows(entries, up: "../") + "\n", to: contained(root, "_声笺/索引.md"))
+        let directory = root.appendingPathComponent("_声笺/分类索引")
         for file in (try? fm.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] where file.pathExtension == "md" && !subjects.map({ safeComponent($0) }).contains(file.deletingPathExtension().lastPathComponent) {
             if (try? String(contentsOf: file, encoding: .utf8).contains(marker)) == true { try fm.removeItem(at: file) }
         }
-        for subject in subjects { try write(marker + "\n# \(subject)\n\n" + rows(entries.filter { $0.subject == subject }, up: "../../") + "\n", to: contained(root, "_声笺/学科索引/\(safeComponent(subject)).md")) }
+        for subject in subjects { try write(marker + "\n# \(subject)\n\n" + rows(entries.filter { $0.subject == subject }, up: "../../") + "\n", to: contained(root, "_声笺/分类索引/\(safeComponent(subject)).md")) }
         try write("""
         \(marker)
         # Agent 检索约定 · v3

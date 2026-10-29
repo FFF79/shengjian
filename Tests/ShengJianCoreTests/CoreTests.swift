@@ -47,7 +47,7 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(first.id, second.id)
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent(first.exportNote!).path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: root.appendingPathComponent(second.exportNote!).path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("_声笺/学科索引/物理.md").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root.appendingPathComponent("_声笺/分类索引/物理.md").path))
         XCTAssertEqual(try catalog(root).count, 1); XCTAssertEqual(try catalog(root).first?.subject, "数学")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(at: rawRoot, includingPropertiesForKeys: nil).filter { $0.pathExtension == "md" }.count, 1)
     }

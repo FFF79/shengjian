@@ -218,11 +218,7 @@ struct MainView: View {
         Text((try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(text))
             .font(.system(size: 14)).lineSpacing(7).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading)
     }
-    private func customSubject() {
-        let alert = NSAlert(); alert.messageText = "学科"; alert.addButton(withTitle: "确定"); alert.addButton(withTitle: "取消")
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 230, height: 25)); field.stringValue = model.selected?.subject ?? ""; alert.accessoryView = field
-        if alert.runModal() == .alertFirstButtonReturn, !safeComponent(field.stringValue).isEmpty { model.editSubject(safeComponent(field.stringValue)) }
-    }
+
 }
 
 struct WaveBars: View {

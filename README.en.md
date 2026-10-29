@@ -103,7 +103,7 @@ Obsidian vault/
 ├── 未分类/
 └── _声笺/
     ├── 索引.md
-    ├── 学科索引/
+    ├── 分类索引/
     └── agent/
         ├── README.md
         ├── records/<ID>.json
