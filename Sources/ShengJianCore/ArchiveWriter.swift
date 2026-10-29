@@ -1,7 +1,7 @@
 import Foundation
 
 public struct CatalogEntry: Codable, Sendable {
-    public var schemaVersion = 4
+    public var schemaVersion = 5
     public var id: String
     public var createdAt: String
     public var title: String
@@ -25,6 +25,10 @@ public struct CatalogEntry: Codable, Sendable {
     public var updatedAt: String? = nil
     public var sourceDevice: String? = nil
     public var rawFileName: String? = nil
+    public var sceneID: String? = nil
+    public var sceneName: String? = nil
+    public var sceneStyle: SceneStyle? = nil
+    public var classificationConfidence: Double? = nil
 }
 
 public actor ArchiveWriter {
@@ -40,7 +44,8 @@ public actor ArchiveWriter {
         let requested = subfolder.isEmpty ? vault : try contained(vault, subfolder)
         var requestedIsDirectory: ObjCBool = false
         let requestedExists = fm.fileExists(atPath: requested.path, isDirectory: &requestedIsDirectory) && requestedIsDirectory.boolValue
-        if recording.folderEdited != true && (subfolder.isEmpty || !requestedExists) { folder = "未分类" }
+        let boundRoot = analysis.scene?.folder == "" && (analysis.scene?.confidence ?? 0) >= 0.65
+        if recording.folderEdited != true && ((subfolder.isEmpty && !boundRoot) || !requestedExists) { folder = "未分类" }
         let destination = folder.isEmpty ? vault : try contained(vault, folder)
         if folder == "未分类" { try fm.createDirectory(at: destination, withIntermediateDirectories: true) }
         let needsClassification = folder.split(separator: "/").first == "未分类"
@@ -73,6 +78,10 @@ public actor ArchiveWriter {
         recording_label: \(quoted(recording.recordingLabel))
         source_device: \(quoted(recording.sourceDevice ?? "macOS"))
         recording_context: \(quoted(analysis.context ?? (recording.resolvedMode == .study ? "study" : "other")))
+        scene_id: \(quoted(analysis.scene?.id ?? ""))
+        scene_name: \(quoted(analysis.scene?.name ?? recording.subject))
+        scene_style: \(quoted(analysis.scene?.style.rawValue ?? analysis.context ?? "topic"))
+        classification_confidence: \(analysis.scene?.confidence ?? analysis.confidence)
         classification_status: \(needsClassification ? "uncategorized" : "filed")
         title: \(quoted(recording.title))
         created: \(quoted(iso))
@@ -114,7 +123,7 @@ public actor ArchiveWriter {
                                    concepts: analysis.concepts.map(\.term), aliases: analysis.learning?.aliases, learningGoals: analysis.learning?.goals,
                                    sectionIndexPath: "_声笺/agent/sections/\(recording.id).jsonl", learningPath: analysis.learning == nil ? nil : "_声笺/agent/learning/\(recording.id).json",
                                    mode: recording.resolvedMode, context: analysis.context, needsClassification: needsClassification,
-                                   updatedAt: ISO8601DateFormatter().string(from: Date()), sourceDevice: recording.sourceDevice ?? "macOS", rawFileName: raw.manuscript.lastPathComponent))
+                                   updatedAt: ISO8601DateFormatter().string(from: Date()), sourceDevice: recording.sourceDevice ?? "macOS", rawFileName: raw.manuscript.lastPathComponent, sceneID: analysis.scene?.id, sceneName: analysis.scene?.name, sceneStyle: analysis.scene?.style, classificationConfidence: analysis.scene?.confidence))
         try checkIndexOwnership(entries, root: vault)
         try write(text, to: noteURL)
         if let entry = entries.last { try write(jsonString(entry), to: contained(vault, "_声笺/agent/records/\(recording.id).json")) }
@@ -226,11 +235,11 @@ public actor ArchiveWriter {
         # Agent 检索约定 · v3
 
         records/<ID>.json 是每篇独立索引，跨设备同步时优先读取这些文件；catalog.jsonl 是可重建的合并视图，同步过程中可能暂时滞后。
-        用 mode（study/other）、context、subject、tags、concepts、aliases、abstract、createdAt 选取成品。needsClassification 为 true 的笔记在「未分类」，应提醒用户手动归档。
+        用 sceneName、sceneID、sceneStyle、context、subject、tags、concepts、aliases、abstract、createdAt 选取成品。新记录 mode 为 automatic，旧版本的 study/other 仅为兼容。needsClassification 为 true 的笔记在「未分类」，应提醒用户手动归档。
         每篇的 sectionIndexPath 指向独立主题索引；sections.jsonl 是兼容的合并视图。
         再搜索 sections.jsonl 的 heading 和 text，读取命中的主题段落；section_id 稳定对应该篇的一个主题段落。
         section 的 source_segment_ids 由原稿片段ID校验；通过 raw_path 中 ^seg-<ID> 核对原话，空数组表示没有精确映射，不得声称有逐句证据。
-        learning/<录音ID>.json 记录学习目标、概念词与主题到原稿的对应关系。正文使用 Obsidian 双向链接；无对应文件的概念链接是待补入口，不是已经验证的资料来源。
+        learning/<录音ID>.json 是兼容命名的来源元数据，记录概念词与主题到原稿的对应关系；新记录不生成学习目标。正文使用 Obsidian 双向链接；无对应文件的概念链接是待补入口，不是已经验证的资料来源。
         notePath 相对于 Obsidian 仓库根目录；rawPath、chunksPath 是仓库之外的绝对路径。
         原转录稿不存入 Obsidian。需要核对原话时读取 rawPath，全文检索读取 chunksPath 对应的 JSONL 文件。
         sourceDevice 标记来源设备；手机本地原稿的绝对路径在 Mac 上可能无法访问。这时先读成品，不能声称已经核对手机原稿。

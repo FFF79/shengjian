@@ -9,8 +9,9 @@ def main():
     parser.add_argument('--root', required=True, type=Path, help='Obsidian vault root')
     parser.add_argument('--raw-root', type=Path, help='Explicit shared raw transcript directory on this device')
     parser.add_argument('--subject')
-    parser.add_argument('--mode', choices=['study', 'other'])
+    parser.add_argument('--mode', choices=['automatic', 'study', 'other'])
     parser.add_argument('--context')
+    parser.add_argument('--scene', help='Exact configured scene name or selected folder category')
     parser.add_argument('--unclassified', action='store_true')
     parser.add_argument('--source', choices=['notes', 'raw', 'all'], default='notes')
     parser.add_argument('--limit', type=int, default=12)
@@ -34,6 +35,7 @@ def main():
             row = json.loads(manifest.read_text()); entries[row['id']] = row
     if not entries: parser.error('No note indexes found')
     if args.subject: entries = {key: row for key, row in entries.items() if row['subject'] == args.subject}
+    if args.scene: entries = {key: row for key, row in entries.items() if row.get('sceneName', row.get('subject')) == args.scene}
     if args.mode: entries = {key: row for key, row in entries.items() if row.get('mode', 'study') == args.mode}
     if args.context: entries = {key: row for key, row in entries.items() if row.get('context') == args.context}
     if args.unclassified: entries = {key: row for key, row in entries.items() if row.get('needsClassification')}
@@ -53,7 +55,7 @@ def main():
             score = sum(text.casefold().count(token) + 3 * section['heading'].casefold().count(token) for token in tokens)
             if score:
                 hits.append({'source': 'note', 'score': score, 'title': entry['title'], 'subject': entry['subject'],
-                    'mode': entry.get('mode', 'study'), 'context': entry.get('context'),
+                    'mode': entry.get('mode', 'automatic'), 'context': entry.get('context'), 'scene': entry.get('sceneName', entry.get('subject')),
                     'needs_classification': entry.get('needsClassification', False),
                     'created_at': entry['createdAt'], 'section_id': section['section_id'], 'heading': section['heading'],
                     'note_path': str(inside(entry['notePath'])), 'raw_path': entry['rawPath'],

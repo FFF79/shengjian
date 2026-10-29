@@ -22,6 +22,8 @@ public enum RawTranscriptStore {
         note_mode: \(recording.resolvedMode.rawValue)
         recording_label: \(q(recording.recordingLabel))
         recording_context: \(q(recording.analysis?.context ?? "pending"))
+        scene_id: \(q(recording.analysis?.scene?.id ?? ""))
+        scene_name: \(q(recording.recordingLabel))
         tags: \(String(decoding: try! JSONEncoder().encode(Array(Set([recording.recordingLabel] + (recording.resolvedMode == .study ? [recording.subject] : []))).sorted()), as: UTF8.self))
         created: \(q(iso))
         title: \(q(recording.title))
@@ -34,7 +36,7 @@ public enum RawTranscriptStore {
 
         # 原转录稿
 
-        > 类型：\(recording.resolvedMode == .study ? "学习 · 科目：" + recording.subject : recording.recordingLabel == "待识别" ? "其他 · 等待自动识别" : recording.recordingLabel + "（自动识别）")
+        > 类型：\(recording.resolvedMode == .study ? "学习 · 科目：" + recording.subject : ["待识别", "场景待识别"].contains(recording.recordingLabel) ? "等待自动识别场景" : recording.recordingLabel + "（自动识别）")
         > 原始语音识别结果，未由 DeepSeek 改写。\(recording.transcriptComplete ? "" : "转写进行中或存在缺失片段。")
 
         \(recording.segments.map { "### \(timestamp($0.start))\n\n\($0.text)\n\n^seg-\($0.id)" }.joined(separator: "\n\n"))

@@ -31,7 +31,7 @@ plist = {
     'CFBundleExecutable': 'ShengJian', 'CFBundleIdentifier': 'org.shengjian.desktop',
     'CFBundleName': '声笺', 'CFBundleDisplayName': '声笺', 'CFBundlePackageType': 'APPL',
     'CFBundleIconFile': 'AppIcon',
-    'CFBundleShortVersionString': '0.2.0', 'CFBundleVersion': '2', 'LSMinimumSystemVersion': '26.0',
+    'CFBundleShortVersionString': '0.3.0', 'CFBundleVersion': '3', 'LSMinimumSystemVersion': '26.0',
     'NSMicrophoneUsageDescription': '声笺使用麦克风在本机将语音转为文字，不保存音频文件。',
     'NSHighResolutionCapable': True, 'NSPrincipalClass': 'NSApplication',
 }

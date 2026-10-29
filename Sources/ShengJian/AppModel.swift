@@ -40,7 +40,7 @@ import ShengJianCore
     var processingCount: Int { finishingIDs.union(summarizingIDs).union(exportingIDs).count }
     var filtered: [Recording] { filter.isEmpty ? recordings : recordings.filter { ($0.title + $0.subject + $0.transcript).localizedCaseInsensitiveContains(filter) } }
     init() {
-        selectedID = nil
+        selectedID = nil; showSettings = !settings.hasConfiguredRoot
         for i in recordings.indices where ["recording", "transcribing", "summarizing"].contains(recordings[i].state) {
             if recordings[i].state != "summarizing" {
                 recordings[i].transcriptComplete = false
@@ -60,7 +60,7 @@ import ShengJianCore
         do {
             let sink = try await mic.start()
             var item = Recording(); item.title = "未命名的录音"; item.state = "recording"; item.rawDirectory = settings.rawPath
-            item.mode = settings.noteMode; item.sourceDevice = "macOS"
+            item.mode = .automatic; item.customRoot = settings.hasConfiguredRoot ? settings.vaultPath : nil; item.sourceDevice = "macOS"
             item.transcriberModel = URL(fileURLWithPath: settings.modelPath).lastPathComponent
             item.transcriberEngine = "qwen3-asr-mlx"
             try SessionFiles.save(item)
@@ -156,7 +156,9 @@ import ShengJianCore
         summaryTasks[id] = Task { await summarize(id: id); summaryTasks[id] = nil }
     }
     private func summarize(id: String) async {
-        guard let item = recordings.first(where: { $0.id == id }), item.hasSpeech, !summarizingIDs.contains(id) else { return }
+        guard var item = recordings.first(where: { $0.id == id }), item.hasSpeech, !summarizingIDs.contains(id) else { return }
+        guard settings.hasConfiguredRoot || item.customRoot != nil else { showSettings = true; notice = "请先选择笔记根目录，原稿已保留。"; return }
+        item.mode = .automatic; mutate(id) { $0.mode = .automatic }
         guard let key = KeychainStore.load(), !key.isEmpty else { showSettings = true; return }
         summarizingIDs.insert(id); mutate(id) { $0.state = "summarizing" }; persist(id)
         let root = URL(fileURLWithPath: item.customRoot ?? settings.vaultPath)
@@ -167,7 +169,7 @@ import ShengJianCore
         let noteLinks = (try? await Task.detached(priority: .utility) {
             try KnowledgeNoteIndex.candidates(root: root, transcript: item.transcript, excluding: item.exportNote)
         }.value) ?? []
-        let harness = DeepSeekHarness(configuration: HarnessConfiguration(apiKey: key, model: model, instructions: settings.instructions, folders: folders, noteLinks: noteLinks))
+        let harness = DeepSeekHarness(configuration: HarnessConfiguration(apiKey: key, model: model, instructions: settings.instructions, folders: folders, noteLinks: noteLinks, scenes: settings.sceneDefinitions(for: root.path)))
         do {
             let result = try await harness.run(recording: item) { [self] status in await updateProgress(status, id: id) }
             mutate(id) { value in
@@ -201,10 +203,6 @@ import ShengJianCore
     }
     func editTitle(_ value: String) { editSelected { $0.title = value; $0.titleEdited = true } }
     func editSubject(_ value: String) { editSelected { $0.subject = value; $0.subjectEdited = true } }
-    func changeMode(_ mode: NoteMode) {
-        editSelected { item in item.mode = mode; item.analyzedTranscriptHash = nil }
-        notice = "整理方式已改为「\(mode.title)」，请点「重新整理」应用。"
-    }
     func setFolder(_ value: String) { editSelected { $0.destinationFolder = value; $0.folderEdited = true } }
     func chooseNoteRoot() {
         guard let id = selectedID, !processing(id), let url = chooseFolder(prompt: "选择这篇成品的存储位置", initial: selected?.customRoot ?? settings.vaultPath) else { return }

@@ -1,9 +1,10 @@
 import Foundation
 
 public enum NoteMode: String, Codable, CaseIterable, Identifiable, Sendable {
-    case study, other
+    // study / other are retained only to decode pre-scene notes. New recordings are automatic.
+    case automatic, study, other
     public var id: String { rawValue }
-    public var title: String { self == .study ? "学习" : "其他" }
+    public var title: String { self == .automatic ? "自动场景" : self == .study ? "学习" : "其他" }
 }
 
 public enum EverydayNoteStyle {

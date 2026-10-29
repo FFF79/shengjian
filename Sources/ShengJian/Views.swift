@@ -36,7 +36,7 @@ struct MainView: View {
             bottomAction
         }
         .background(paper).foregroundStyle(ink).tint(accent).preferredColorScheme(.light)
-        .sheet(isPresented: $model.showSettings, onDismiss: model.refreshFolders) { SettingsView(settings: settings).frame(width: 550, height: 560) }
+        .sheet(isPresented: $model.showSettings, onDismiss: model.refreshFolders) { SettingsView(settings: settings).frame(width: 590, height: 650) }
         .frame(minWidth: 640, minHeight: 540)
     }
     private var welcome: some View {
@@ -44,7 +44,7 @@ struct MainView: View {
             VStack(alignment: .leading, spacing: 25) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("开始一段录音").font(.system(size: 25, weight: .medium))
-                    Text("先选择学习或其他，结束后自动整理并归档。").font(.system(size: 12)).foregroundStyle(.secondary)
+                    Text("录音结束后，识别场景、按格式整理，再归档到对应文件夹。").font(.system(size: 12)).foregroundStyle(.secondary)
                 }.padding(.top, 18)
                 if !model.recordings.isEmpty {
                     HStack { Text("最近记录").font(.system(size: 12, weight: .semibold)); Spacer(); Button("全部记录") { history = true }.buttonStyle(.borderless).font(.system(size: 11)) }
@@ -88,9 +88,6 @@ struct MainView: View {
                     Text(note.recordingLabel).font(.system(size: 10)).foregroundStyle(accent)
                     Spacer()
                     Menu {
-                        Menu("整理方式：" + note.resolvedMode.title) {
-                            ForEach(NoteMode.allCases) { mode in Button(mode.title) { model.changeMode(mode) } }
-                        }.disabled(model.processing(note.id))
                         Button("重新整理", action: model.requestSummary).disabled(model.processing(note.id) || !note.hasSpeech)
                         Button("查看独立原稿", action: model.revealRaw)
                         if note.exportNote != nil { Button("在 Obsidian 中打开", action: model.openObsidian); Button("在访达中显示", action: model.reveal) }
@@ -103,11 +100,7 @@ struct MainView: View {
                 }
                 if note.analysis != nil {
                     HStack(spacing: 8) {
-                        if note.resolvedMode == .study { Menu {
-                            ForEach(LocalClassifier.subjects, id: \.self) { subject in Button(subject) { model.editSubject(subject) } }
-                            Button("自定义学科…") { customSubject() }
-                        } label: { Text(note.subject) }.menuStyle(.borderlessButton).fixedSize()
-                        Text("·").foregroundStyle(.tertiary) }
+                        Text(note.recordingLabel).foregroundStyle(accent)
                         Menu {
                             Button("仓库根目录") { model.setFolder("") }
                             ForEach(model.availableFolders, id: \.self) { folder in Button(folder) { model.setFolder(folder) } }
@@ -169,12 +162,7 @@ struct MainView: View {
     private var bottomAction: some View {
         VStack(spacing: 11) {
             if !model.isRecording && !model.isPreparing {
-                HStack(spacing: 9) {
-                    if model.selected != nil { Text("下一轮").font(.system(size: 10)).foregroundStyle(.secondary) }
-                    Picker("整理方式", selection: $settings.noteMode) {
-                        ForEach(NoteMode.allCases) { mode in Text(mode.title).tag(mode) }
-                    }.pickerStyle(.segmented).labelsHidden().frame(width: 166)
-                }
+                Text("自动识别场景 · 按绑定目录归档").font(.system(size: 10)).foregroundStyle(.secondary)
             }
             HStack {
                 Spacer()
@@ -257,15 +245,37 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var key = ""
     @State private var message = ""
+    @State private var newFolder = ""
+    @State private var editingScene: SceneDefinition?
     var body: some View {
         VStack(spacing: 0) {
             HStack { Text("设置").font(.system(size: 19, weight: .medium)); Spacer(); Button("完成") { dismiss() }.keyboardShortcut(.defaultAction) }.padding(23)
             Divider()
             Form {
                 Section("存储位置") {
-                    HStack { VStack(alignment: .leading, spacing: 5) { Text("Obsidian 成品仓库"); Text(settings.vaultPath).font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(2) }; Spacer(); Button("选择…", action: settings.chooseVault) }
+                    HStack { VStack(alignment: .leading, spacing: 5) { Text("笔记根目录 · Obsidian 或普通文件夹"); Text(settings.vaultPath).font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(2) }; Spacer(); Button("选择…", action: settings.chooseVault) }
                     HStack { VStack(alignment: .leading, spacing: 5) { Text("独立原稿目录"); Text(settings.rawPath).font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(2) }; Spacer(); Button("选择…") { message = settings.chooseRawDirectory() ?? "" } }
-                    Text("模型从已有学科目录中选择位置并自动归档。原转录稿不进入 Obsidian。").font(.system(size: 10)).foregroundStyle(.secondary)
+                    HStack {
+                        TextField("创建子目录，例如 工作/会议", text: $newFolder)
+                        Button("创建目录") { do { _ = try settings.createFolder(newFolder); newFolder = ""; message = "目录已创建，可绑定到场景。" } catch { message = error.localizedDescription } }.disabled(newFolder.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    }
+                    if !settings.storageMessage.isEmpty { Text(settings.storageMessage).font(.system(size: 10)).foregroundStyle(.secondary) }
+                    Text("选择整个仓库或任意目录作为根目录。原转录稿单独保存于其外。").font(.system(size: 10)).foregroundStyle(.secondary)
+                }
+                Section("自动场景与目录") {
+                    Text("先分类，再按场景格式整理并归档。未设置的场景仍会匹配已有文件夹；无合适位置则进入「未分类」。").font(.system(size: 10)).foregroundStyle(.secondary)
+                    ForEach(settings.scenes) { scene in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(scene.name)
+                                Text((scene.folder.map { $0.isEmpty ? "根目录" : $0 } ?? "未绑定目录") + " · " + scene.style.title).font(.system(size: 10)).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Button("编辑") { editingScene = scene }
+                            Button("移除") { settings.scenes.removeAll { $0.id == scene.id } }.foregroundStyle(.secondary)
+                        }
+                    }
+                    Button("添加场景", systemImage: "plus") { editingScene = SceneDefinition(name: "") }.disabled(!settings.hasConfiguredRoot)
                 }
                 Section("DeepSeek") {
                     HStack {
@@ -275,7 +285,7 @@ struct SettingsView: View {
                             catch { message = error.localizedDescription }
                         }.disabled(key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     }
-                    Text("仅发送转写文字，用于整理、学科判断和目录匹配。").font(.system(size: 10)).foregroundStyle(.secondary)
+                    Text("发送转写文字、场景配置和候选目录/笔记元数据，先分类，再整理。").font(.system(size: 10)).foregroundStyle(.secondary)
                 }
                 DisclosureGroup("高级设置") {
                     Picker("DeepSeek 模型", selection: $settings.deepSeekModel) {
@@ -293,6 +303,7 @@ struct SettingsView: View {
                 if !message.isEmpty { Text(message).font(.system(size: 11)).foregroundStyle(accent) }
             }.formStyle(.grouped).scrollContentBackground(.hidden)
         }.background(paper).foregroundStyle(ink).tint(accent).preferredColorScheme(.light)
+        .sheet(item: $editingScene) { scene in SceneEditor(settings: settings, scene: scene) }
     }
 }
 

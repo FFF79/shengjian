@@ -17,9 +17,9 @@ All observations are dated 2026-10-29. Commands below run from the repository ro
 | E-001 | command / tracked-file inventory | `git ls-files` | Source, tests and documentation only; no mobile directory or private runtime artifacts |
 | E-002 | command / Gitleaks 8.30.1 filesystem scan | `gitleaks dir . --redact` | No secret findings |
 | E-003 | command / publication checker | `python3 scripts/check_publication.py --self-test` and `python3 scripts/check_publication.py` | Detector self-tests and tracked-file checks pass; reports hide matched values |
-| E-004 | command / Swift tests | `swift test --scratch-path /tmp/shengjian-tests --build-system native` | 33 desktop/shared-core tests pass, using synthetic data and temporary directories |
+| E-004 | command / Swift tests | `swift test --scratch-path /tmp/shengjian-tests --build-system native` | 42 desktop/shared-core tests pass, using synthetic data and temporary directories |
 | E-005 | command / source build and audio conversion | `python3 scripts/build_app.py` then `"dist/声笺.app/Contents/MacOS/ShengJian" --verify-audio` | App builds; in-memory conversion yields 144000 samples for 9 seconds, without microphone access or saving audio |
-| E-006 | file + manual / privacy boundaries | Review `Sources/ShengJian/Settings.swift`, `Sources/ShengJianCore/DeepSeekHarness.swift`, `Sources/ShengJianCore/LocalASRWorker.swift`, and `scripts/qwen_worker.py` | Key stored through Keychain API; DeepSeek receives text/metadata; local ASR receives PCM in pipes and enables offline mode |
+| E-006 | file + manual / privacy boundaries | Review `Sources/ShengJian/Settings.swift`, `Sources/ShengJianCore/DeepSeekHarness.swift`, `Sources/ShengJianCore/LocalASRWorker.swift`, and `scripts/qwen_worker.py` | Key stored through Keychain API; DeepSeek receives text, scene rules and metadata; local ASR receives PCM in pipes and enables offline mode |
 | E-007 | command + manual / Python static review | `uvx --from bandit bandit -q -r scripts` | 0 high and 0 medium findings; 28 low subprocess/PATH warnings manually reviewed |
 
 E-007 warnings concern developer helper scripts invoking local tools through argument arrays. They do not invoke a shell with transcript or model-generated input. Scripts assume a trusted local development environment and PATH; they are not a boundary for executing untrusted repositories.
@@ -67,3 +67,11 @@ Residual risks: ongoing changes need the same checks; generated notes can contai
 - [x] Readmes describe cloud text processing and retained local text.
 - [x] Tests use synthetic inputs and isolated temporary folders.
 - [x] No real credentials, private paths, or machine-specific logs are included in this report.
+
+## Automatic-scenes update
+
+The same publication checks cover the unified automatic-scene release. New recordings classify first, then organize with the bound format and archive. The recording page has no Study/Other selector. Legacy mode values remain solely for compatibility with old records.
+
+Scene-routing tests validate request order, custom format and folder precedence, unrecognized IDs, low confidence, missing destinations, explicit root binding, source metadata, and folder traversal/symlink rejection. Interactive checks used an isolated temporary workspace to select a generic root, create a subfolder, add/edit a scene, bind a destination, save a structure and custom format, and verify the mode-free homepage. No private vault, original recording, or live API key was used.
+
+Scene settings are local and isolated by root. The open-source app uses its own preference identity, Keychain service, and `ShengJian/Sessions` text-recovery directory; it does not load a separate personal build's credentials or recording history. ASR weights are installed separately, outside Git.

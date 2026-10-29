@@ -149,7 +149,7 @@ final class HarnessTests: XCTestCase {
         return (DeepSeekHarness(configuration: HarnessConfiguration(apiKey: "test-not-a-secret", folders: folders), session: session, cacheDirectory: root, inputWindow: inputWindow), root)
     }
     func envelope(_ content: String) throws -> Data { try JSONSerialization.data(withJSONObject: ["choices": [["finish_reason": "stop", "message": ["content": content]]]]) }
-    func note() -> Recording { var item = Recording(); item.segments = [.init(start: 0, end: 5, text: "derivative 描述变化率。")]; return item }
+    func note() -> Recording { var item = Recording(); item.mode = .study; item.segments = [.init(start: 0, end: 5, text: "derivative 描述变化率。")]; return item }
     func testStructuredResultAndCheckpointAvoidRepeatedAPIRequests() async throws {
         let (harness, _) = try setupHarness(); let data = try envelope(valid); var requests = 0
         StubProtocol.handler = { request in
@@ -257,7 +257,7 @@ final class LearningDocumentTests: XCTestCase {
         let raw = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root); try? FileManager.default.removeItem(at: raw) }
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        var note = Recording(); note.title = "概念辨析"; note.subject = "物理"; note.segments = [.init(start: 0, end: 5, text: "原稿独立保存", id: "known")]
+        var note = Recording(); note.mode = .study; note.title = "概念辨析"; note.subject = "物理"; note.segments = [.init(start: 0, end: 5, text: "原稿独立保存", id: "known")]
         var a = try analysis(); a.learning = a.learning?.grounded(in: ["known"]); a.noteFormatVersion = 3
         note.analysis = a; note.analyzedTranscriptHash = digest(note.transcript); note.transcriptComplete = true
         let exported = try await ArchiveWriter().export(note, root: root, subfolder: "", rawRoot: raw)

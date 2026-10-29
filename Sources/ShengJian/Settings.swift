@@ -13,14 +13,34 @@ import ShengJianCore
     @Published var vocabulary: String { didSet { defaults.set(vocabulary, forKey: "vocabulary") } }
     @Published var interval: Double { didSet { defaults.set(interval, forKey: "interval") } }
     @Published var hasKey: Bool
-    @Published var noteMode: NoteMode { didSet { defaults.set(noteMode.rawValue, forKey: "noteMode") } }
+    @Published var scenes: [SceneDefinition] { didSet { if let data = try? JSONEncoder().encode(scenes) { defaults.set(data, forKey: Self.sceneKey(vaultPath)) } } }
+    @Published var storageMessage = ""
+    var hasConfiguredRoot: Bool { defaults.bool(forKey: "hasConfiguredRoot") }
+    private static func sceneKey(_ root: String) -> String { "sceneDefinitions-" + digest(URL(fileURLWithPath: root).standardizedFileURL.resolvingSymlinksInPath().path) }
+    private static func storedScenes(_ root: String) -> [SceneDefinition] {
+        guard let data = UserDefaults.standard.data(forKey: sceneKey(root)), let scenes = try? JSONDecoder().decode([SceneDefinition].self, from: data) else { return [] }
+        return scenes
+    }
+    func sceneDefinitions(for root: String) -> [SceneDefinition] { root == vaultPath ? scenes : Self.storedScenes(root) }
+    var sceneFolders: [String] { (try? VaultFolders.list(at: URL(fileURLWithPath: vaultPath))) ?? [] }
+    func saveScene(_ scene: SceneDefinition) throws {
+        let scene = try scene.validated()
+        guard !scenes.contains(where: { $0.id != scene.id && $0.name.localizedCaseInsensitiveCompare(scene.name) == .orderedSame }) else { throw AppError.message("场景名称已存在。") }
+        if let folder = scene.folder, !folder.isEmpty, !sceneFolders.contains(folder) { throw AppError.message("绑定目录不存在，请先创建或重新选择。") }
+        if let i = scenes.firstIndex(where: { $0.id == scene.id }) { scenes[i] = scene } else { scenes.append(scene) }
+    }
+    @discardableResult func createFolder(_ path: String) throws -> String {
+        guard hasConfiguredRoot else { throw AppError.message("请先选择笔记根目录。") }
+        return try VaultFolders.create(path.trimmingCharacters(in: .whitespacesAndNewlines), at: URL(fileURLWithPath: vaultPath))
+    }
     private let defaults = UserDefaults.standard
     private var accessed: [URL] = []
 
     init() {
         let d = UserDefaults.standard
-        noteMode = NoteMode(rawValue: d.string(forKey: "noteMode") ?? "") ?? .study
-        vaultPath = d.string(forKey: "vaultPath") ?? Self.discoverVault() ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents").path
+        let initialRoot = d.string(forKey: "vaultPath") ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/声笺笔记").path
+        vaultPath = initialRoot
+        scenes = Self.storedScenes(initialRoot)
         rawPath = d.string(forKey: "rawPath") ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Documents/声笺原稿").path
         modelPath = d.string(forKey: "qwenModelPath") ?? QwenRuntime.modelDirectory.path
         let storedModel = d.string(forKey: "deepSeekModel") ?? "deepseek-flash"
@@ -40,10 +60,13 @@ import ShengJianCore
         return (vaults.values.first { $0["open"] as? Bool == true } ?? vaults.values.first)?["path"] as? String
     }
     func chooseVault() {
-        if let url = chooseFolder(prompt: "选择 Obsidian 仓库或存储目录", initial: vaultPath) {
+        if let url = chooseFolder(prompt: "选择 Obsidian 仓库根目录或普通笔记目录", initial: vaultPath) {
+            let selected = url.standardizedFileURL.resolvingSymlinksInPath().path
+            let raw = URL(fileURLWithPath: rawPath).standardizedFileURL.resolvingSymlinksInPath().path
+            guard raw != selected, !raw.hasPrefix(selected + "/") else { storageMessage = "原稿目录需要在所选根目录之外，请先更换原稿目录。"; return }
             if url.startAccessingSecurityScopedResource() { accessed.append(url) }
             if let bookmark = try? url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil) { defaults.set(bookmark, forKey: "vaultBookmark") }
-            vaultPath = url.path
+            vaultPath = url.path; scenes = Self.storedScenes(vaultPath); defaults.set(true, forKey: "hasConfiguredRoot"); storageMessage = "已连接笔记根目录。"
         }
     }
     func chooseModel() {

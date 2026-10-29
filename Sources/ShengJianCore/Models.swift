@@ -31,10 +31,11 @@ public struct Analysis: Codable, Equatable, Sendable {
     public var learning: LearningSupport?
     public var mode: NoteMode?
     public var context: String?
+    public var scene: SceneRoute?
 
     public var documentBody: String {
         var sections: [String] = []
-        if mode != .other, let goals = learning?.goals, !goals.isEmpty {
+        if (mode ?? .study) == .study, let goals = learning?.goals, !goals.isEmpty {
             sections.append("> [!abstract] 本篇要掌握\n" + goals.map { "> - " + $0.replacingOccurrences(of: "\n", with: " ") }.joined(separator: "\n"))
         }
         sections.append(organizedMarkdown.trimmingCharacters(in: .whitespacesAndNewlines))
@@ -64,14 +65,16 @@ public struct Recording: Codable, Identifiable, Equatable, Sendable {
     public var createdAt = Date()
     public var title = "新的录音"
     public var subject = "待分类"
-    public var mode: NoteMode?
+    public var mode: NoteMode? = .automatic
     public var needsClassification: Bool?
     public var resolvedMode: NoteMode { mode ?? .study }
     public var recordingLabel: String {
-        resolvedMode == .study ? "学习" : analysis?.context.flatMap(RecordingContext.init(rawValue:))?.title ?? "待识别"
+        if resolvedMode == .automatic { return analysis?.scene?.name ?? "场景待识别" }
+        return resolvedMode == .study ? "学习" : analysis?.context.flatMap(RecordingContext.init(rawValue:))?.title ?? "待识别"
     }
     public var classificationDisplay: String {
-        resolvedMode == .study ? "学习 · " + (subject == "待分类" ? "科目待识别" : subject) : "其他 · " + (recordingLabel == "待识别" ? "场景待识别" : recordingLabel)
+        if resolvedMode == .automatic { return recordingLabel }
+        return resolvedMode == .study ? "学习 · " + (subject == "待分类" ? "科目待识别" : subject) : "其他 · " + (recordingLabel == "待识别" ? "场景待识别" : recordingLabel)
     }
     public var archivedFolderDisplay: String? {
         guard let exportRoot, let exportNote else { return nil }
@@ -148,7 +151,7 @@ public enum LocalClassifier {
 }
 
 public enum SessionFiles {
-    public static var base: URL { FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("声笺", isDirectory: true) }
+    public static var base: URL { FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("ShengJian", isDirectory: true) }
     public static func directory(_ id: String) -> URL { base.appendingPathComponent("Sessions/\(id)", isDirectory: true) }
     public static func save(_ recording: Recording) throws {
         let folder = directory(recording.id)
