@@ -1,0 +1,35 @@
+name: Desktop checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check publication content
+        run: |
+          python3 scripts/check_publication.py --self-test
+          python3 scripts/check_publication.py
+      - name: Scan files and history for secrets
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          brew install gitleaks
+          gitleaks dir . --redact
+          gitleaks git . --redact
+      - name: Test shared core
+        run: swift test --scratch-path "$RUNNER_TEMP/shengjian-tests" --build-system native
+      - name: Build macOS application
+        run: python3 scripts/build_app.py
+      - name: Verify microphone conversion without microphone access
+        run: '"dist/声笺.app/Contents/MacOS/ShengJian" --verify-audio'
