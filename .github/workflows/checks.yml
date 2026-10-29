@@ -2,6 +2,7 @@ name: Desktop checks
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -27,9 +28,13 @@ jobs:
           brew install gitleaks
           gitleaks dir . --redact
           gitleaks git . --redact
+      - name: Test compiler-free model downloader
+        run: python3 -m unittest discover -s Tests/Python -v
       - name: Test shared core
         run: swift test --scratch-path "$RUNNER_TEMP/shengjian-tests" --build-system native
       - name: Build macOS application
         run: python3 scripts/build_app.py
       - name: Verify microphone conversion without microphone access
         run: '"dist/声笺.app/Contents/MacOS/ShengJian" --verify-audio'
+      - name: Verify release inventory, signature, and privacy
+        run: python3 scripts/package_release.py --verify-only

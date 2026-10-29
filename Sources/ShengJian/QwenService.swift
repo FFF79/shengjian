@@ -2,7 +2,7 @@ import Foundation
 import ShengJianCore
 
 enum QwenRuntime {
-    static let directory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/声笺/ASR")
+    static let directory = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/ShengJian/ASR")
     static let modelDirectory = directory.appendingPathComponent("models/Qwen3-ASR-1.7B-8bit")
     static let python = directory.appendingPathComponent("runtime/bin/python")
     static var worker: URL { Bundle.main.resourceURL!.appendingPathComponent("qwen_worker.py") }

@@ -2,32 +2,37 @@
 
 [简体中文](USAGE.zh-CN.md) · [English](USAGE.en.md) · [Project home](../README.en.md)
 
-ShengJian currently ships as source code, without a one-click installer. Build it yourself or ask an agent with local terminal access to help. No agent needs to remain running during daily recording.
+ShengJian includes a downloadable Mac app and matching open-source code. Normal use requires no Xcode; follow the [download installation guide](INSTALL.en.md), or ask a local agent to help. No agent needs to stay running during recording.
 
 ## Option 1: Ask an agent to install it
 
 Copy this prompt into your local coding agent:
 
 ```text
-Please install the macOS version of ShengJian from https://github.com/FFF79/shengjian.
+Please install ShengJian from the official Releases at https://github.com/FFF79/shengjian.
+Read README.en.md, AGENTS.md, and docs/INSTALL.en.md first.
+Check for Apple Silicon and macOS 26+. Download the app ZIP and verify SHA-256.
+Do not mistake Source code archives for the app or replace an unrelated installed app.
+Normal use requires no Xcode, Homebrew, or preinstalled Python; do not install development
+tools just to run the app. Check build tools only if I explicitly request a source build.
 
-Read README.en.md and AGENTS.md first. Check for Apple Silicon, macOS 26+,
-full Xcode, Python 3, and uv. Clone the repository into your working directory.
-Download the pinned local Qwen model, install the isolated runtime, build the app,
-and install it at ~/Applications/声笺.app.
-If a different application already occupies that location, preserve it and report
-this conflict. Keep resumable downloads and SHA-256 verification enabled.
-
-Run unit tests and the --verify-audio check without accessing the microphone.
-Do not call paid APIs or read Keychain, personal recordings, or Obsidian notes.
-I will enter my API key inside the app later; do not ask me to paste it into chat
-or save it in files. Once installation is complete, explain how to select the
-vault and separate transcript folder and make my first recording.
+Use the app's Install / repair local transcription components button for model setup.
+Do not bypass macOS security warnings automatically; let me complete the app-specific
+opening confirmation following Apple's instructions.
+Do not read Keychain, private recordings, or notes or call paid APIs.
+I will enter my API key inside the app, never in chat or files.
+Explain how to connect my own note root, separate originals, and scene filing rules.
 ```
 
-The agent should complete the installation and local checks that its environment supports, reporting specific missing prerequisites. You may need to complete Xcode setup, microphone permissions, and folder selection in the system UI. A troubleshooting prompt is provided below.
+The agent should complete the installation and local checks that its environment supports, reporting specific missing prerequisites. Complete app-opening confirmation, microphone permissions, and folder selection in the system UI yourself. A troubleshooting prompt is provided below.
 
 ## Option 2: Install it yourself
+
+Download the app ZIP from [Releases](https://github.com/FFF79/shengjian/releases/latest), extract it, and move the app into Applications. Follow the [first-launch guide](INSTALL.en.md) for an app-specific macOS exception, then install local transcription components in Settings. These steps need no Xcode or preinstalled Python.
+
+### Optional: Build from source
+
+The following is only for people who want to compile or develop the app.
 
 1. Install full Xcode and complete its first-launch setup.
 2. Install Python 3 and uv. With Homebrew, use `brew install uv python`; other options are documented in the [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/).
@@ -68,7 +73,7 @@ Custom rules are optional. Existing folders become classification candidates and
 
 Removing a scene rule does not delete archived notes. Existing records use current rules only when explicitly reorganized; changing settings does not rewrite old notes in bulk.
 
-Advanced settings should show `千问 Qwen3-ASR 1.7B · 已就绪` (Ready). Otherwise check setup and the model directory. You can record and transcribe locally without a DeepSeek key, then choose Organize transcript (`整理原稿`) later.
+Local transcription components should show Ready. If not, click Install / repair (`安装 / 修复本地转写组件`). Advanced settings also allow selecting another model directory. You can record and transcribe locally without a DeepSeek key, then choose Organize transcript (`整理原稿`) later.
 
 ## Daily workflow: Record, review, and file
 

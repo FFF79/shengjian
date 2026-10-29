@@ -6,7 +6,13 @@
 
 ShengJian is a native Apple Silicon Mac app. Qwen transcribes mixed Chinese and English locally; DeepSeek then reorganizes the text, identifies its category, and files the finished note. The app does not save audio files. Original transcripts live outside your Obsidian vault.
 
-> This repository ships **macOS source code**, with a Chinese-language interface. It requires macOS 26+, Apple Silicon, full Xcode, and a local model. Summarization uses your own paid DeepSeek API access. It does not include the mobile app, model weights, or a notarized installer.
+> A **packaged Mac app and its source** are available. Normal use requires no Xcode, Homebrew, or preinstalled Python. The Chinese-language app requires macOS 26+, Apple Silicon, and a local model. It uses ad hoc signing without Apple notarization; organization uses your own paid DeepSeek API access.
+
+## Download the app — no Xcode needed
+
+Download `ShengJian-0.3.1-macOS-arm64.zip` from [Releases](https://github.com/FFF79/shengjian/releases/latest), extract it, and move `声笺.app` to Applications. On first use, click Install / repair local transcription components in Settings to prepare managed Python and Qwen.
+
+The app lacks Developer ID signing and Apple notarization, so macOS may block the first launch. Follow the [download and opening instructions](docs/INSTALL.en.md) to verify checksums and grant an exception for this app, without disabling system protections. Both app and source use MIT; `RELEASE.json` identifies the matching commit.
 
 ## How to use it
 
@@ -56,7 +62,7 @@ open "$HOME/Applications/声笺.app"
 
 If Xcode is installed elsewhere, set `DEVELOPER_DIR` accordingly. The build produces `dist/声笺.app`; `--install` also installs it to `~/Applications/声笺.app`. Builds use local ad hoc signing and are not notarized.
 
-Setup pins the model revision and Python dependency versions and verifies the weights with SHA-256. The model and runtime live in `~/Library/Application Support/声笺/ASR/`, outside Git and the app bundle. Re-run setup to resume an interrupted download. Do not bypass a checksum failure.
+Setup pins the model revision and Python dependency versions and verifies the weights with SHA-256. The model and runtime live in `~/Library/Application Support/ShengJian/ASR/`, outside Git and the app bundle. Re-run setup to resume an interrupted download. Do not bypass a checksum failure.
 
 ### 3. First launch
 

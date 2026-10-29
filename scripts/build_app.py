@@ -13,7 +13,10 @@ APP = BUILD / '声笺.app'
 env = dict(os.environ)
 if 'DEVELOPER_DIR' not in env and Path('/Applications/Xcode.app/Contents/Developer').exists():
     env['DEVELOPER_DIR'] = '/Applications/Xcode.app/Contents/Developer'
-build_command = ['swift', 'build', '--scratch-path', str(BUILD), '--build-system', 'native', '-c', 'release']
+build_command = ['swift', 'build', '--scratch-path', str(BUILD), '--build-system', 'native', '-c', 'release',
+    '-Xswiftc', '-file-prefix-map', '-Xswiftc', str(ROOT) + '=/src/shengjian',
+    '-Xswiftc', '-debug-prefix-map', '-Xswiftc', str(Path.home()) + '=/build',
+    '-Xswiftc', '-file-compilation-dir', '-Xswiftc', '/src/shengjian']
 subprocess.run(build_command, cwd=ROOT, env=env, check=True)
 bin_path = Path(subprocess.check_output(build_command + ['--show-bin-path'], cwd=ROOT, env=env, text=True).strip())
 contents = APP / 'Contents'
@@ -23,15 +26,23 @@ for folder in ['MacOS', 'Resources']:
     (contents / folder).mkdir(parents=True, exist_ok=True)
 binary = contents / 'MacOS/ShengJian'
 shutil.copy2(bin_path / 'ShengJian', binary)
+subprocess.run(['/usr/bin/strip', '-S', '-x', str(binary)], check=True)
 shutil.copy2(ROOT / 'scripts/qwen_worker.py', contents / 'Resources/qwen_worker.py')
+installer = contents / 'Resources/installer'
+installer.mkdir()
+for name in ['setup_asr.sh', 'setup_qwen.py', 'download_qwen.py', 'qwen-requirements.txt']:
+    shutil.copy2(ROOT / 'scripts' / name, installer / name)
 iconset = BUILD / 'ShengJian.iconset'
 subprocess.run(['swift', str(ROOT / 'scripts/make_icon.swift'), str(iconset)], env=env, check=True)
 subprocess.run(['iconutil', '-c', 'icns', str(iconset), '-o', str(contents / 'Resources/AppIcon.icns')], check=True)
+source_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+source_dirty = bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT).strip())
 plist = {
+    'ShengJianSourceCommit': source_commit, 'ShengJianSourceDirty': source_dirty,
     'CFBundleExecutable': 'ShengJian', 'CFBundleIdentifier': 'org.shengjian.desktop',
     'CFBundleName': '声笺', 'CFBundleDisplayName': '声笺', 'CFBundlePackageType': 'APPL',
     'CFBundleIconFile': 'AppIcon',
-    'CFBundleShortVersionString': '0.3.0', 'CFBundleVersion': '3', 'LSMinimumSystemVersion': '26.0',
+    'CFBundleShortVersionString': '0.3.1', 'CFBundleVersion': '4', 'LSMinimumSystemVersion': '26.0',
     'NSMicrophoneUsageDescription': '声笺使用麦克风在本机将语音转为文字，不保存音频文件。',
     'NSHighResolutionCapable': True, 'NSPrincipalClass': 'NSApplication',
 }

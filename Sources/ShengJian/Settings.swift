@@ -14,6 +14,7 @@ import ShengJianCore
     @Published var interval: Double { didSet { defaults.set(interval, forKey: "interval") } }
     @Published var hasKey: Bool
     @Published var scenes: [SceneDefinition] { didSet { if let data = try? JSONEncoder().encode(scenes) { defaults.set(data, forKey: Self.sceneKey(vaultPath)) } } }
+    let installer = ASRInstaller()
     @Published var storageMessage = ""
     var hasConfiguredRoot: Bool { defaults.bool(forKey: "hasConfiguredRoot") }
     private static func sceneKey(_ root: String) -> String { "sceneDefinitions-" + digest(URL(fileURLWithPath: root).standardizedFileURL.resolvingSymlinksInPath().path) }

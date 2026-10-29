@@ -36,7 +36,7 @@ struct MainView: View {
             bottomAction
         }
         .background(paper).foregroundStyle(ink).tint(accent).preferredColorScheme(.light)
-        .sheet(isPresented: $model.showSettings, onDismiss: model.refreshFolders) { SettingsView(settings: settings).frame(width: 590, height: 650) }
+        .sheet(isPresented: $model.showSettings, onDismiss: model.refreshFolders) { SettingsView(settings: settings, installationBlocked: model.busy || model.isFinishing).frame(width: 590, height: 650) }
         .frame(minWidth: 640, minHeight: 540)
     }
     private var welcome: some View {
@@ -238,6 +238,7 @@ struct WaveBars: View {
 
 struct SettingsView: View {
     @ObservedObject var settings: SettingsStore
+    var installationBlocked = false
     @Environment(\.dismiss) private var dismiss
     @State private var key = ""
     @State private var message = ""
@@ -258,6 +259,7 @@ struct SettingsView: View {
                     if !settings.storageMessage.isEmpty { Text(settings.storageMessage).font(.system(size: 10)).foregroundStyle(.secondary) }
                     Text("选择整个仓库或任意目录作为根目录。原转录稿单独保存于其外。").font(.system(size: 10)).foregroundStyle(.secondary)
                 }
+                LocalASRSetupView(settings: settings, installer: settings.installer, blocked: installationBlocked)
                 Section("自动场景与目录") {
                     Text("先分类，再按场景格式整理并归档。未设置的场景仍会匹配已有文件夹；无合适位置则进入「未分类」。").font(.system(size: 10)).foregroundStyle(.secondary)
                     ForEach(settings.scenes) { scene in

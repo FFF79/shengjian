@@ -55,6 +55,7 @@ import ShengJianCore
     func toggleRecording() { Task { if isRecording { await stop() } else { await start() } } }
     func start() async {
         guard !busy else { return }
+        guard !settings.installer.running else { notice = "本地组件仍在安装，请等待安装完成后录音。"; return }
         guard settings.modelAvailable else { notice = "未找到千问模型或本地运行组件，请检查高级设置中的模型目录。"; showSettings = true; return }
         isPreparing = true; notice = nil
         do {

@@ -1,6 +1,6 @@
 # Third-party components
 
-The MIT license in this repository covers ShengJian application source and its original helper scripts. It does not relicense separately downloaded models, dependencies, or online services. This source publication vendors no model weights, Python packages, or Apple SDK files.
+The MIT license in this repository covers ShengJian application source and its original helper scripts. It does not relicense separately downloaded models, dependencies, or online services. The source and packaged app vendor no model weights, Python packages, uv executable, or Apple SDK files. The bundled open-source setup scripts download these components separately, with pinned uv/model checksums. Managed Python is provided by Astral python-build-standalone; its runtime and dependencies retain their own notices.
 
 | Component | Role | License / terms source |
 | --- | --- | --- |

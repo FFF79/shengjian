@@ -2,31 +2,36 @@
 
 [简体中文](USAGE.zh-CN.md) · [English](USAGE.en.md) · [返回首页](../README.md)
 
-声笺当前提供源码，没有一键安装包。你可以自己按步骤安装，也可以把安装提示词交给能操作本机终端的 Agent。日常录音不需要 Agent 常驻。
+声笺提供可直接下载的 Mac 应用和对应开源代码。普通使用无需 Xcode，推荐按 [下载版安装说明](INSTALL.zh-CN.md) 操作；也可以让本机 Agent 帮忙。日常录音不需要 Agent 常驻。
 
 ## 方式一：让 Agent 帮你安装
 
 把下面整段发给你的本机编程 Agent：
 
 ```text
-请帮我从 https://github.com/FFF79/shengjian 安装 macOS 版声笺。
+请帮我从 https://github.com/FFF79/shengjian 的官方 Releases 安装 macOS 版声笺。
+先阅读 README.md、AGENTS.md 和 docs/INSTALL.zh-CN.md。
+确认是 Apple Silicon、macOS 26+，下载应用 ZIP、校验文件并核对 SHA-256。
+不要下载自动生成的 Source code 当作应用，不要覆盖其他来源的同名应用。
+普通用户不需要 Xcode、Homebrew 或预装 Python，不要为了安装软件而添加开发工具。
+若我明确要求从源码构建，再检查完整 Xcode 和构建依赖。
 
-先阅读仓库的 README.md 和 AGENTS.md，检查是否为 Apple Silicon、
-macOS 26+，以及完整 Xcode、Python 3、uv 是否可用。
-在你自己的工作目录克隆仓库。请下载固定版本的本地千问模型、
-安装独立运行环境、构建并安装应用到 ~/Applications/声笺.app。
-如已装有其他来源或身份不同的同名应用，保留它，说明冲突。
-模型下载可以很久，保持断点续传和 SHA-256 校验，不要关闭校验。
-
-运行单元测试和不启用麦克风的 --verify-audio 检查。
-不需要调用付费 API，不读取钥匙串、个人录音或 Obsidian 笔记。
-API Key 由我稍后在应用设置中自己填写，不要让我发到聊天或写进文件。
-安装后告诉我如何选择仓库、独立原稿目录，并开始第一段录音。
+模型通过应用设置中的「安装 / 修复本地转写组件」准备。
+不要自动绕过 macOS 安全警告；按官方说明让我完成单个应用的打开确认。
+不读取钥匙串、私人录音或笔记，不调用付费 API。
+API Key 由我在应用中自己填写，不要让我发到聊天或写入文件。
+安装后告诉我怎样连接自己的笔记根目录、原稿目录以及场景归档规则。
 ```
 
-Agent 应先完成可执行的安装和本地检查；若环境不支持，应说明具体缺少什么。系统要求你完成的 Xcode 安装、麦克风授权和目录选择，可由你在界面中操作。遇到错误可参考下方的排错提示词。
+Agent 应先完成可执行的安装和本地检查；若环境不支持，应说明具体缺少什么。系统要求的打开确认、麦克风授权和目录选择，由你在界面中操作。遇到错误可参考下方的排错提示词。
 
 ## 方式二：自己安装
+
+从 [Releases](https://github.com/FFF79/shengjian/releases/latest) 下载应用 ZIP，解压并放入应用程序目录。按 [首次打开说明](INSTALL.zh-CN.md) 完成 macOS 的应用例外确认，再在声笺设置里安装本地转写组件。以上步骤不需要 Xcode 或预装 Python。
+
+### 可选：从源码构建
+
+只有想自行编译或开发时才需要以下步骤。
 
 1. 安装完整 Xcode，并打开完成系统要求的首次设置。
 2. 准备 Python 3 和 uv。使用 Homebrew 时可执行 `brew install uv python`；其他安装方式见 [uv 官方说明](https://docs.astral.sh/uv/getting-started/installation/)。
@@ -67,7 +72,7 @@ open "$HOME/Applications/声笺.app"
 
 删除场景规则不会删除已经归档的笔记。已有记录在「重新整理」时才应用当前规则，修改设置不会自动批量重写旧笔记。
 
-高级设置里确认「千问 Qwen3-ASR 1.7B · 已就绪」。若未就绪，先检查模型安装和模型目录。没有 DeepSeek 密钥也可以本地录音转写，原稿独立保存，之后再点「整理原稿」。
+在「本地转写组件」确认已就绪；未就绪时点击「安装 / 修复本地转写组件」。高级设置可以另选模型目录。没有 DeepSeek 密钥也可以本地录音转写，原稿独立保存，之后再点「整理原稿」。
 
 ## 日常使用：从录音到笔记
 

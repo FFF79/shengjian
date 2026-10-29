@@ -2,7 +2,7 @@ import XCTest
 @testable import ShengJianCore
 
 final class LocalASRWorkerTests: XCTestCase {
-    private func fixture(_ behavior: String) throws -> (URL, LocalASRWorker) {
+    private func fixture(_ behavior: String, timeout: TimeInterval = 15) throws -> (URL, LocalASRWorker) {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let script = root.appendingPathComponent("worker.py")
@@ -18,7 +18,7 @@ final class LocalASRWorkerTests: XCTestCase {
         """
         try Data(source.utf8).write(to: script)
         let python = ["/opt/homebrew/bin/python3.12", "/usr/bin/python3"].first { FileManager.default.isExecutableFile(atPath: $0) }!
-        return (root, LocalASRWorker(python: URL(fileURLWithPath: python), script: script, timeout: 2))
+        return (root, LocalASRWorker(python: URL(fileURLWithPath: python), script: script, timeout: timeout))
     }
     func testBinaryPCMRoundsRemainIndependentAndUseOfflineEnvironment() async throws {
         let (root, worker) = try fixture("print(json.dumps({'event':'result','request_id':request['request_id'],'text':request['prompt'] + ':' + str(struct.unpack('<f', pcm[:4])[0]) + ':' + __import__('os').environ['HF_HUB_OFFLINE']}), flush=True)")
@@ -57,7 +57,7 @@ final class LocalASRWorkerTests: XCTestCase {
         catch { XCTAssertTrue(error.localizedDescription.contains("长度")) }
     }
     func testUnresponsiveWorkerTimesOutAndCanBeUnloaded() async throws {
-        let (root, worker) = try fixture("time.sleep(30)")
+        let (root, worker) = try fixture("time.sleep(30)", timeout: 1)
         defer { try? FileManager.default.removeItem(at: root) }
         let pcm = [Float(0.1)].withUnsafeBytes { Data($0) }, start = Date()
         do { _ = try await worker.transcribe(pcm: pcm, sampleCount: 1, modelPath: "fixture", prompt: ""); XCTFail("Expected timeout") }

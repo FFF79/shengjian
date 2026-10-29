@@ -6,7 +6,13 @@
 
 声笺是面向 Apple Silicon Mac 的原生应用：用本地千问识别中英混合语音，再由 DeepSeek 按内容重新组织笔记、判断分类并归档。应用不保存音频文件；原始转录稿独立保存于知识库之外。
 
-> 当前发布的是 **macOS 源码版**，界面为中文；需要 macOS 26+、Apple Silicon、完整 Xcode 和本地模型。整理使用你自己的 DeepSeek API Key，产生的 API 费用由你承担。不包含手机版、预装模型或已公证安装包。
+> 提供 **可下载的 Mac 应用及对应源码**，界面为中文。普通用户无需 Xcode、Homebrew 或预装 Python；需要 macOS 26+、Apple Silicon 和本地模型。应用有临时本地签名，未经过 Apple 公证；整理使用自己的 DeepSeek API Key。
+
+## 直接下载安装（无需 Xcode）
+
+从 [Releases](https://github.com/FFF79/shengjian/releases/latest) 下载 `ShengJian-0.3.1-macOS-arm64.zip`，解压并把 `声笺.app` 放到应用程序目录。首次在设置中点击「安装 / 修复本地转写组件」，自动准备独立 Python 和千问模型。
+
+没有 Developer ID 签名或 Apple 公证，首次可能被 macOS 拦截。请按 [下载版安装与打开说明](docs/INSTALL.zh-CN.md) 核对校验值，并通过系统设置对这个应用单独授权；不要关闭系统安全保护。包内与源码采用同一 MIT 许可证，`RELEASE.json` 标明对应提交。
 
 ## 使用指南
 
@@ -56,7 +62,7 @@ open "$HOME/Applications/声笺.app"
 
 Xcode 若在其他位置，请将 `DEVELOPER_DIR` 指向实际路径。构建脚本生成 `dist/声笺.app`；`--install` 另安装到 `~/Applications/声笺.app`。默认使用临时本地签名，未公证。
 
-安装器固定模型 revision 和 Python 依赖版本，并验证权重 SHA-256。模型存于 `~/Library/Application Support/声笺/ASR/`，不放入 Git，也不重复打包到应用。下载失败后可重新运行安装器以续传；如校验失败，应重新获取权重，不要跳过校验。
+安装器固定模型 revision 和 Python 依赖版本，并验证权重 SHA-256。模型存于 `~/Library/Application Support/ShengJian/ASR/`，不放入 Git，也不重复打包到应用。下载失败后可重新运行安装器以续传；如校验失败，应重新获取权重，不要跳过校验。
 
 ### 3. 首次配置
 
